@@ -92,30 +92,7 @@ Gui, Submit, NoHide
 Sleep -1
 }
 Return
-TrigerSub:
-GuiControlGet, trigger
-if trigger
-setbatchlines,-1
-dir := "1.png"
-if (!fileexist(dir)) {
-URLDownloadToFile,http://i.imgur.com/wrQBaYL.png, % dir
-while (!fileexist(dir))
-sleep, 50
-}
-wingetpos,,,ww,wh, % "ahk_class TankWindowClass"
-center_x := ww/2
-center_y := wh/2
-loop {
-ImageSearch, , , % center_x, 0, % center_x, % center_y, % "*80 " dir
-If (!Errorlevel) {
-ImageSearch, , , % center_x, % center_y, % center_x, % wh, % "*80 " dir
-If (!Errorlevel)
-Send {Click down}
-Sleep,225
-Send {Click up}
-Sleep,20
-}}
-Return
+
 F4::
 Send {Ctrl Down}{Shift Down}{R Down}{Ctrl Up}{Shift Up}{R Up}
 Return
@@ -135,18 +112,7 @@ Return
 Return
 Return
 
-mouseXY(x,y)
-{
-DllCall("mouse_event",int,1,int,x,int,y,uint,0,uint,0)
-}
-#If
-return
-#If aimtype2=1
-~capslock::
-GoSub MouseMoves2
-Return
-#If
-Return
+
 sub1:
 {
 msgbox, Having issues?`n`nMccree Right Click No Recoil Does NOT!!! work with right click aimlock`nHOLD DOWN RIGHT CLICK FOR IT TO WORK DONT JUST PRESS BUTTON`n`nAll Combos are middle mouse button`n`nCheat is CPU intensive and only uses math.`n`nLowFPS: Lower Aim speed to 1.`nLowFPS: Lower resolution to 720p and play on low.`nLowFPS: If you get low fps after a playthrough, press F3 to restart the cheat.`n`nCursor jumping left or right when using Aim key?`n`nJumpBug:Your PC is lagging out when using Aimkey. Check LowFPS solution.`nJumpBug: Switch your resolution to 720p but use F2(1080p) with Aim Speed 1.`n`nAlways try the cheat out in Practice Range to find your best settings.
@@ -192,6 +158,141 @@ MsgBox,  Applied
 Gui,Submit, Nohide
 return
 
+F1::
+#Persistent
+#KeyHistory, 0
+#NoEnv
+#HotKeyInterval 1
+#MaxHotkeysPerInterval 127
+#InstallKeybdHook
+#UseHook
+#SingleInstance, Force
+SetKeyDelay,-1, 8
+SetControlDelay, -1
+SetMouseDelay, 0
+SetWinDelay,-1
+SendMode, InputThenPlay
+SetBatchLines,-1
+ListLines, Off
+CoordMode, Mouse, Screen
+PID := DllCall("GetCurrentProcessId")
+Process, Priority, %PID%, Normal
+ZeroX := 640
+ZeroY := 360
+CFovX := 320
+CFovY := 200
+ScanL := 500
+ScanR := 800
+ScanT := 180
+ScanB := 400
+
+;UI parameters
+GuiControlget, rX
+GuiControlget, xa
+GuiControlget, ya
+GuiControlget, xrange
+GuiControlget, yrange
+
+;detection box
+LargeX1 := 0 + (A_Screenwidth * (xrange/10))
+LargeY1 := 0 + (A_Screenheight * (yrange/10))-40
+LargeX2 := A_Screenwidth - (A_Screenwidth * (xrange/10))
+LargeY2 := A_Screenheight - (A_Screenheight * (yrange / 10))-75
+SmallX1 := LargeX1 + 60
+SmallY1 := LargeY1 
+SmallX2 := LargeX2 - 60
+SmallY2 := LargeY2 - 55
+
+;parameters used for pixel search, ideal ColVn should be 0, meaning that EMCol is the exact color of health bar
+EMCol := 0xFF0013
+ColVn := 2
+FoundFlag :=false
+
+if(overlayActive=1){
+Box_Init("FF0000")
+Box_Draw(LargeX1, LargeY1 , LargeX2-LargeX1, LargeY2-LargeY1)
+}
+
+Loop, {
+Gui,Submit, Nohide
+
+GoSub SearchBot
+GetKeyState, Mouse2, LButton, P
+if ( Mouse2 == "D" ) {
+
+GoSub GetAimOffset
+GoSub GetAimMoves
+GoSub MouseMoves
+
+}
+
+
+
+
+}
+
+MouseMoves:
+If ( Mouse2 == "D" ) {
+DllCall("mouse_event", uint, 1, int, MoveX, int, MoveY, uint, 0, int, 0)
+}
+Return
+
+;MouseMoves1:
+;If ( Mouse2 == "U" ) {
+;DllCall("mouse_event", uint, 1, int, MoveX, int, MoveY, uint, 0, int, 0)
+;}
+;Return
+
+GetAimOffset:
+Gui,Submit, Nohide
+AimX := AimPixelX - ZeroX +30
+AimY := AimPixelY - ZeroY +50
+If ( AimX+5 > 0) {
+DirX := rx / 8
+}
+If ( AimX+5 < 0) {
+DirX := (-rx) / 10
+}
+If ( AimY+2 > 0 ) {
+DirY := rX /10 *0.5
+}
+If ( AimY+2 < 0 ) {
+DirY := (-rx) /10 *0.5
+}
+AimOffsetX := AimX * DirX
+AimOffsetY := AimY * DirY
+Return
+
+
+
+GetAimMoves:
+RootX :=  AimOffsetX 
+RootY :=  AimOffsetY 
+MoveX := RootX * DirX
+MoveY := RootY * DirY
+Return
+
+SleepF:
+SleepDuration = 1
+TimePeriod = 1
+DllCall("Winmm\timeBeginPeriod", uint, TimePeriod)
+Iterations = 1
+StartTime := A_TickCount
+Loop, %Iterations% {
+DllCall("Sleep", UInt, TimePeriod)
+}
+DllCall("Winmm\timeEndPeriod", UInt, TimePeriod)
+Return
+
+DebugTool:
+MouseGetPos, MX, MY
+ToolTip, %AimOffsetX% | %AimOffsetY%
+ToolTip, %AimX% | %AimY%
+ToolTip, %IntAimX% | %IntAimY%
+ToolTip, %RootX% | %RootY%
+ToolTip, %MoveX% | %MoveY% || %MX% %MY%
+Return
+
 F2::
 #Persistent
 #KeyHistory, 0
@@ -219,6 +320,15 @@ ScanL := 660
 ScanR := 1250
 ScanT := 280
 ScanB := 610
+
+;UI parameters
+GuiControlget, rX
+GuiControlget, xa
+GuiControlget, ya
+GuiControlget, xrange
+GuiControlget, yrange
+
+;detection box
 LargeX1 := 0 + (A_Screenwidth * (xrange/10))
 LargeY1 := 0 + (A_Screenheight * (yrange/10))-40
 LargeX2 := A_Screenwidth - (A_Screenwidth * (xrange/10))
@@ -228,20 +338,17 @@ SmallY1 := LargeY1
 SmallX2 := LargeX2 - 60
 SmallY2 := LargeY2 - 55
 
-FoundFlag :=false
-GuiControlget, rX
-GuiControlget, xa
-GuiControlget, ya
-GuiControlget, xrange
-GuiControlget, yrange
+
 ;parameters used for pixel search, ideal ColVn should be 0, meaning that EMCol is the exact color of health bar
 EMCol := 0xFF0013
-ColVn := 2
+ColVn := 1
+FoundFlag :=false
 
 if(overlayActive=1){
 Box_Init("FF0000")
 Box_Draw(LargeX1, LargeY1 , LargeX2-LargeX1, LargeY2-LargeY1)
 }
+
 Loop, {
 Gui,Submit, Nohide
 
@@ -249,9 +356,14 @@ GoSub SearchBot
 GetKeyState, Mouse2, LButton, P
 if ( Mouse2 == "D" ) {
 
-GoSub GetAimOffset2
+GoSub GetAimOffset1
 GoSub GetAimMoves1
-GoSub MouseMoves2
+GoSub MouseMoves1
+
+}
+
+
+
 
 }
 
@@ -260,18 +372,7 @@ GoSub MouseMoves2
 
 
 
-
-
-
-
-}
-
-
-
-
-
-
-MouseMoves2:
+MouseMoves1:
 DllCall("mouse_event", uint, 1, int, MoveX, int, MoveY, uint, 0, int, 0)
 Return
 
@@ -280,39 +381,6 @@ If ( Mouse2 == "U" ) {
 DllCall("mouse_event", uint, 1, int, MoveX, int, MoveY, uint, 0, int, 0)
 }
 
-
-
-
-
-GetAimOffset2:
-Gui,Submit, Nohide
-AimX := AimPixelX - ZeroX +42
-AimY := AimPixelY - ZeroY +90
-If ( AimX+4 > 0) {
-DirX := rx / 8
-}
-If ( AimX+4 < 0) {
-DirX := (-rx) / 10
-}
-If ( AimY+2 > 0 ) {
-DirY := rX /10 *0.5
-}
-If ( AimY+2 < 0 ) {
-DirY := (-rx) /10 *0.5
-}
-AimOffsetX := AimX * DirX
-AimOffsetY := AimY * DirY
-Return
-
-GetAimMoves1:
-RootX := Ceil(AimOffsetX)
-RootY := Ceil(AimOffsetY)
-;RootX := AimOffsetX
-;RootY := AimOffsetY
-MoveX := RootX * DirX
-MoveY := RootY * DirY
-;GoSub DebugTool1
-Return
 
 
 SearchBot:
@@ -329,6 +397,41 @@ else {
 		FoundFlag := false		
 }
 Return
+
+
+
+GetAimOffset1:
+Gui,Submit, Nohide
+AimX := AimPixelX - ZeroX +42
+AimY := AimPixelY - ZeroY +90
+If ( AimX+4 > 0) {
+DirX := rx / 8.5
+}
+If ( AimX+4 < 0) {
+DirX := (-rx) / 10
+}
+If ( AimY+2 > 0 ) {
+DirY := rX /10 *0.55
+}
+If ( AimY+2 < 0 ) {
+DirY := (-rx) /10 *0.5
+}
+AimOffsetX := AimX * DirX
+AimOffsetY := AimY * DirY
+Return
+
+GetAimMoves1:
+;RootX := Ceil(AimOffsetX)
+;RootY := Ceil(AimOffsetY)
+RootX := AimOffsetX
+RootY := AimOffsetY
+MoveX := RootX * DirX
+MoveY := RootY * DirY
+;GoSub DebugTool1
+Return
+
+
+
 
 reload:
 SleepF1:
