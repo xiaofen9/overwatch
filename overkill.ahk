@@ -1,5 +1,5 @@
 ; <COMPILER: v1.1.24.01>
-Box_Init(C="FF0000") {
+Box_Init(C="00FF00") {
 Gui, 96: -Caption +ToolWindow +E0x20
 Gui, 96: Color, % C
 Gui, 97: -Caption +ToolWindow +E0x20
